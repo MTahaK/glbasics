@@ -66,6 +66,63 @@ int main() {
     // GL_DEPTH_BUFFER_BIT → clears depth values
     // GL_STENCIL_BUFFER_BIT → clears stencil mask - not relevant now
     // You combine them using | when needed.
+    
+    // GLAD/GLFW setup
+
+    float vertices[] = {
+        // x, y coords
+        -0.5f, -0.5f, // bottom left
+        0.5f, 0.5f,   // bottom right
+        0.0f, 0.5f    // top center
+    };
+
+    
+    unsigned int VBO;                       // vertex buffer object
+    glGenBuffers(1, &VBO);                  // Generate 1 buffer
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);     // Bind it as a vertex buffer
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); // This does the actual upload of vertex data to the GPU.
+    // GL_STATIC_DRAW -> “This data will be set once and drawn many times”
+    // "I'm not going to update this often—just use it for drawing"
+
+    // | Function       | Purpose                                      |
+    // | -------------- | -------------------------------------------- |
+    // | `glGenBuffers` | Ask OpenGL to allocate a buffer              |
+    // | `glBindBuffer` | Make it the *current* buffer for vertex data |
+    // | `glBufferData` | Copy your CPU-side array into the GPU buffer |
+
+    // | Usage Hint        | Meaning                                                        |
+    // | ----------------- | -------------------------------------------------------------- |
+    // | `GL_STATIC_DRAW`  | Data will not change often; used for static models, UI, etc.   |
+    // | `GL_DYNAMIC_DRAW` | Data will change often; used for frequently updated animations |
+    // | `GL_STREAM_DRAW`  | Data will change every frame; used for real-time streams       |
+
+    // What happens internally:
+    // Your float[] array in RAM:
+    // [-0.5, -0.5, 0.5, -0.5, 0.0, 0.5]
+
+    // ↓ glBufferData
+
+    // GPU Memory (VRAM):
+    //     [same data now lives here]
+
+
+
+    // Create VAO (vertex array object)
+    unsigned int VAO;
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO); // bind vertex array before describing attributes
+
+    glVertexAttribPointer(
+        0,                  // attribute location (in vertex shader)
+        2,                  // number of components (x, y)
+        GL_FLOAT,           // data type
+        GL_FALSE,           // normalize?
+        2 * sizeof(float),  // stride (bytes between vertices)
+        (void*)0            // offset into data
+    );
+    glEnableVertexAttribArray(0);
+    
+    
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;
