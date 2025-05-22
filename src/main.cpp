@@ -212,22 +212,34 @@ int main() {
 
     // Set up triangle, shader objects, and load and link shaders
 
+    // float vertices[] = {
+    //     // x, y coords
+    //     -0.5f, -0.5f, // bottom left
+    //     0.5f, 0.5f,   // bottom right
+    //     0.0f, 0.5f    // top center
+
+    //     // -0.5f, -0.5f, 
+    //     // 0.0f, 0.5f,   
+    //     // 0.5f, -0.5f    
+    // };
+
     float vertices[] = {
-        // x, y coords
-        -0.5f, -0.5f, // bottom left
-        0.5f, 0.5f,   // bottom right
-        0.0f, 0.5f    // top center
-
-        // -0.5f, -0.5f, 
-        // 0.0f, 0.5f,   
-        // 0.5f, -0.5f    
-    };
-
-    // For use with glDrawElements (more useful for my game):
-    unsigned int indices[] = {
-        0, 1, 2  // draw triangle using vertex 0 → 1 → 2
+        // x, y
+        -0.5f, -0.5f,  // 0: bottom left
+         0.5f, -0.5f,  // 1: bottom right
+         0.5f,  0.5f,  // 2: top right
+        -0.5f,  0.5f   // 3: top left
     };
     
+    // For use with glDrawElements (more useful for my game):
+    // unsigned int indices[] = {
+    //     0, 1, 2  // draw triangle using vertex 0 → 1 → 2
+    // };
+    unsigned int indices[] = {
+        0, 1, 2,  // first triangle (bottom-left → bottom-right → top-right)
+        2, 3, 0   // second triangle (top-right → top-left → bottom-left)
+    };
+
     // Create VAO (vertex array object)
     // Create and bind VAO BEFORE VBO bind, binding VAO "starts recording state"
     unsigned int VAO;
@@ -341,7 +353,7 @@ int main() {
         // so you must bind the VAO (and shader program) again before issuing draw calls.
 
         // glDrawArrays(GL_TRIANGLES, 0, 3);
-       
+
         // void glDrawArrays(GLenum mode, GLint first, GLsizei count);
         // -----------------
         // mode:   GL_TRIANGLES = interpret every group of 3 vertices as a triangle
@@ -355,7 +367,7 @@ int main() {
         //   GL_TRIANGLE_STRIP   → shared-vertex triangle chain
         //   GL_TRIANGLE_FAN     → radial triangles sharing the first vertex
 
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         // | Argument          | Meaning                                         |
         // | ----------------- | ----------------------------------------------- |
         // | `GL_TRIANGLES`    | Draws one triangle per 3 indices                |
