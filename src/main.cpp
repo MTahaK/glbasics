@@ -222,6 +222,12 @@ int main() {
         // 0.0f, 0.5f,   
         // 0.5f, -0.5f    
     };
+
+    // For use with glDrawElements (more useful for my game):
+    unsigned int indices[] = {
+        0, 1, 2  // draw triangle using vertex 0 → 1 → 2
+    };
+    
     // Create VAO (vertex array object)
     // Create and bind VAO BEFORE VBO bind, binding VAO "starts recording state"
     unsigned int VAO;
@@ -257,6 +263,11 @@ int main() {
     // GPU Memory (VRAM):
     //     [same data now lives here]
 
+    // For glDrawElements:
+    unsigned int EBO;
+    glGenBuffers(1, &EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(
         0,                  // attribute location (in vertex shader)
@@ -329,7 +340,8 @@ int main() {
         // OpenGL does not retain the VAO binding between frames or state changes,
         // so you must bind the VAO (and shader program) again before issuing draw calls.
 
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        // glDrawArrays(GL_TRIANGLES, 0, 3);
+       
         // void glDrawArrays(GLenum mode, GLint first, GLsizei count);
         // -----------------
         // mode:   GL_TRIANGLES = interpret every group of 3 vertices as a triangle
@@ -342,6 +354,49 @@ int main() {
         //   GL_LINE_STRIP       → connected line segments
         //   GL_TRIANGLE_STRIP   → shared-vertex triangle chain
         //   GL_TRIANGLE_FAN     → radial triangles sharing the first vertex
+
+        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+        // | Argument          | Meaning                                         |
+        // | ----------------- | ----------------------------------------------- |
+        // | `GL_TRIANGLES`    | Draws one triangle per 3 indices                |
+        // | `3`               | Number of indices to use                        |
+        // | `GL_UNSIGNED_INT` | Type of the indices in the EBO (`unsigned int`) |
+        // | `0`               | Offset in the EBO (start at beginning)          |
+
+        // ! NOTE: glDrawElements would be better suited for my game.
+        // ! glDrawElements allows you to draw objects that share vertices w/o
+        // ! having to duplicate the shared vertices.
+        
+        // glDrawArrays
+        // float vertices[] = {
+        //     triangle 1
+        //     -0.5f, -0.5f,  // bottom left
+        //      0.5f, -0.5f,  // bottom right
+        //      0.5f,  0.5f,  // top right
+        
+        //      triangle 2
+        //      0.5f,  0.5f,  // top right (again)
+        //     -0.5f,  0.5f,  // top left
+        //     -0.5f, -0.5f   // bottom left (again)
+        // };
+
+        // glDrawElements
+        // float vertices[] = {
+        //     -0.5f, -0.5f,  // 0: bottom left
+        //      0.5f, -0.5f,  // 1: bottom right
+        //      0.5f,  0.5f,  // 2: top right
+        //     -0.5f,  0.5f   // 3: top left
+        // };
+        // unsigned int indices[] = {
+        //     0, 1, 2,  // first triangle
+        //     2, 3, 0   // second triangle
+        // };
+
+        // for glDrawElements, add during setup after binding VAO:
+        // unsigned int EBO;
+        // glGenBuffers(1, &EBO);
+        // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
         glfwSwapBuffers(window);          // Present the frame (double buffering)
         glfwPollEvents();                 // Handle keyboard/mouse/input/window events
