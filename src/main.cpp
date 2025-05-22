@@ -110,6 +110,7 @@ int main() {
     // GPU Memory (VRAM):
     //     [same data now lives here]
 
+
     glVertexAttribPointer(
         0,                  // attribute location (in vertex shader)
         2,                  // number of components (x, y)
@@ -118,7 +119,31 @@ int main() {
         2 * sizeof(float),  // stride (bytes between vertices)
         (void*)0            // offset into data
     );
+
+    // One can think of the VAO as a lookup table of mappings for the data in the VBO.
+
+    // glVertexAttribPointer(
+    //     index,          // attribute location in the vertex shader
+    //     size,           // number of components (e.g., 2 for vec2, 3 for vec3)
+    //     type,           // usually GL_FLOAT
+    //     normalized,     // whether to normalize (typically false for floats)
+    //     stride,         // total byte size of one vertex
+    //     pointer         // byte offset to this attribute within each vertex
+    // );
+    // “Attribute index in the vertex shader should read from the currently bound VBO
+    //  using this layout. Also, store this association in the currently bound VAO.”
     glEnableVertexAttribArray(0);
+
+    // Effectively, each call of glVertexAttribPointer sets up the mapping for a single
+    // attribute in the VBO. The index given corresponds to the 'attribute index' that
+    // is then activated by glEnableVertexAttribArray(index). The index has nothing
+    // to do with the byte offset in the VBO. The index is the location in the vertex
+    // shader.
+    
+    // GLSL example:
+    // layout (location = 0) in vec3 aPosition;
+    // layout (location = 1) in vec3 aColor;
+    // layout (location = 2) in vec2 aTexCoord;
     
     // After this point, the VAO, which is 'recording state', understands that:
     // Attribute 0 uses VBO X, reads 2 floats...
