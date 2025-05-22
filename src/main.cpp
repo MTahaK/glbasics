@@ -67,7 +67,6 @@ int main() {
     // GL_STENCIL_BUFFER_BIT → clears stencil mask - not relevant now
     // You combine them using | when needed.
     
-    // GLAD/GLFW setup
 
     float vertices[] = {
         // x, y coords
@@ -76,7 +75,12 @@ int main() {
         0.0f, 0.5f    // top center
     };
 
-    
+    // Create VAO (vertex array object)
+    // Create and bind VAO BEFORE VBO bind, binding VAO "starts recording state"
+    unsigned int VAO;
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO); 
+
     unsigned int VBO;                       // vertex buffer object
     glGenBuffers(1, &VBO);                  // Generate 1 buffer
     glBindBuffer(GL_ARRAY_BUFFER, VBO);     // Bind it as a vertex buffer
@@ -104,13 +108,6 @@ int main() {
 
     // GPU Memory (VRAM):
     //     [same data now lives here]
-
-
-
-    // Create VAO (vertex array object)
-    unsigned int VAO;
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO); // bind vertex array before describing attributes
 
     glVertexAttribPointer(
         0,                  // attribute location (in vertex shader)
