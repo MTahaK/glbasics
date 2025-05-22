@@ -84,6 +84,7 @@ int main() {
     unsigned int VBO;                       // vertex buffer object
     glGenBuffers(1, &VBO);                  // Generate 1 buffer
     glBindBuffer(GL_ARRAY_BUFFER, VBO);     // Bind it as a vertex buffer
+    // Binding a VBO to GL_ARRAY_BUFFER sets it as the source of vertex data for upcoming attribute configuration calls, like glVertexAttribPointer.
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); // This does the actual upload of vertex data to the GPU.
     // GL_STATIC_DRAW -> “This data will be set once and drawn many times”
     // "I'm not going to update this often—just use it for drawing"
@@ -119,6 +120,8 @@ int main() {
     );
     glEnableVertexAttribArray(0);
     
+    // After this point, the VAO, which is 'recording state', understands that:
+    // Attribute 0 uses VBO X, reads 2 floats...
     
     glfwDestroyWindow(window);
     glfwTerminate();
