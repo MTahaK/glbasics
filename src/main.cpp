@@ -185,7 +185,7 @@ int main() {
     // Create an 800x600 window with title "GL Triangle Window"
     // last two args are for context sharing between windows - not needed here
     // Function call also creates an OpenGL context associated with the window.
-    GLFWwindow* window = glfwCreateWindow(800, 600, "GL Triangle Window", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1920, 1080, "GL Triangle Window", nullptr, nullptr);
 
     if(!window){
         std::cerr << "Failed to create GLFW window\n";
@@ -233,19 +233,21 @@ int main() {
 
     float vertices[] = {
         // x, y coords
-        -0.5f, -0.5f, // bottom left
-        0.5f, 0.5f,   // bottom right
-        0.0f, 0.5f    // top center
+        // -0.5f, -0.5f, // bottom left
+        // 0.5f, 0.5f,   // bottom right
+        // 0.0f, 0.5f    // top center
 
-        // -0.5f, -0.5f, 
-        // 0.0f, 0.5f,   
-        // 0.5f, -0.5f    
+        -0.25f, -0.25f, 
+        0.0f, 0.25f,   
+        0.25f, -0.25f    
     };
 
     // For use with glDrawElements (more useful for my game):
     unsigned int indices[] = {
         0, 1, 2  // draw triangle using vertex 0 → 1 → 2
     };
+
+    float xOffset, yOffset;
     
     // Create VAO (vertex array object)
     // Create and bind VAO BEFORE VBO bind, binding VAO "starts recording state"
@@ -338,13 +340,49 @@ int main() {
 
     // Everything is now ready, enter draw loop.
     // Main game/render loop, runs until close button is pressed or glfwSetWindowShouldClose(window, true) is called
-    
+
     while (!glfwWindowShouldClose(window)) {
         glClear(GL_COLOR_BUFFER_BIT);     // Clear the screen to the background color
         // GL_COLOR_BUFFER_BIT is a bitmask constant that tells OpenGL to clear the color buffer
         // using the value previously set with glClearColor().
         
+        // Handle horizontal input polling
+        if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS){
+            // left key pressed
+            xOffset = xOffset - 0.01f;
+        }
+        if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS){
+            // right key pressed
+            xOffset = xOffset + 0.01f;
+        }
+
+        // Handle vertical input polling
+        if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS){
+            // up key pressed
+            yOffset = yOffset + 0.01f;
+        }
+        if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS){
+            // down key pressed
+            yOffset = yOffset - 0.01f;
+        }
+
         glUseProgram(shaderProgram);
+
+        // int offsetLoc = glGetUniformLocation(shaderProgram, "xOffset");
+        // Asks OpenGL:
+        // “In the currently linked shader program, where is the uniform variable named xOffset?”
+        // OpenGL will:
+        // Look into the compiled+linked shader program
+        // Find the memory location for the variable xOffset
+        // Return an integer handle that refers to that location
+        // OpengGL doesn't expose actual variable pointers in GLSL - uses opaque location IDs
+        glUniform1f(glGetUniformLocation(shaderProgram, "xOffset"), xOffset);
+        glUniform1f(glGetUniformLocation(shaderProgram, "yOffset"), yOffset);
+
+        // Sends the value of xOffset(C++) to the GPU at the location where xOffset is found
+        // in the GLSL shader program. 
+        // * THIS IS THE BASIC METHOD TO UPDATE VALUES USED IN SHADER CODE!
+
         glBindVertexArray(VAO);           // ✅ Reactivate the same VAO for drawing
         // Render Loop Setup Notes
         // ------------------------
