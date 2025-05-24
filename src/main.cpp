@@ -341,29 +341,38 @@ int main() {
     // Everything is now ready, enter draw loop.
     // Main game/render loop, runs until close button is pressed or glfwSetWindowShouldClose(window, true) is called
 
+    // Start time measure
+    float lastFrameTime = glfwGetTime(); // seconds
     while (!glfwWindowShouldClose(window)) {
+        float currentFrameTime = glfwGetTime();
+        float deltaTime = currentFrameTime - lastFrameTime;
+        lastFrameTime = currentFrameTime;
         glClear(GL_COLOR_BUFFER_BIT);     // Clear the screen to the background color
         // GL_COLOR_BUFFER_BIT is a bitmask constant that tells OpenGL to clear the color buffer
         // using the value previously set with glClearColor().
         
-        // Handle horizontal input polling
+        // Input polling
+
+        float speed = 1.0f;
+        if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
+            speed = 2.0f;
+        }
         if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS){
             // left key pressed
-            xOffset = xOffset - 0.01f;
+            xOffset = xOffset - speed * deltaTime;
         }
         if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS){
             // right key pressed
-            xOffset = xOffset + 0.01f;
+            xOffset = xOffset + speed * deltaTime;
         }
 
-        // Handle vertical input polling
         if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS){
             // up key pressed
-            yOffset = yOffset + 0.01f;
+            yOffset = yOffset + speed * deltaTime;
         }
         if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS){
             // down key pressed
-            yOffset = yOffset - 0.01f;
+            yOffset = yOffset - speed * deltaTime;
         }
 
         glUseProgram(shaderProgram);
