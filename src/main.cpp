@@ -5,6 +5,40 @@
 #include <sstream>
 #include <string>
 
+bool isPaused = false;
+
+// Key Callback Function (GLFW Required Signature)
+// ----------------------------------------------
+// This function is registered via glfwSetKeyCallback(...), and GLFW will call it automatically
+// whenever a key is pressed, released, or repeated.
+//
+// It MUST match this exact signature:
+//
+//     void callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+//
+// Even if some parameters go unused, they must be present—GLFW uses this function pointer
+// internally, and the types/positions must match exactly.
+//
+// Parameters:
+// - window:     The GLFW window where the event occurred (can be ignored if only one window)
+// - key:        The key that was pressed (e.g., GLFW_KEY_P, GLFW_KEY_SPACE)
+// - scancode:   Low-level hardware key ID (useful for remapping, usually unused)
+// - action:     One of GLFW_PRESS, GLFW_RELEASE, or GLFW_REPEAT
+// - mods:       Bitmask for modifier keys (GLFW_MOD_SHIFT, GLFW_MOD_CONTROL, etc.)
+
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods){
+    if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS){
+        isPaused = !isPaused;
+        std::cout << (isPaused ? "Game Paused\n" : "Game Unpaused\n");
+    }
+}
+
+// If I wanted to handle multiple different inputs via a callback event, I would
+// do so within the *single* keyCallback function. Only ONE callback function can
+// be registered for key presses. One implementation would be to use a switch block
+// to determine the input to be handled out of all inputs registered in the callback.
+// The callback is essentially an event router.
+
 std::string loadShaderSource(const char* filePath){
     std::ifstream file(filePath);
     std::stringstream buffer;
@@ -247,7 +281,7 @@ int main() {
         0, 1, 2  // draw triangle using vertex 0 → 1 → 2
     };
 
-    float xOffset, yOffset;
+    float xOffset= 0.0f, yOffset = 0.0f;
     
     // Create VAO (vertex array object)
     // Create and bind VAO BEFORE VBO bind, binding VAO "starts recording state"
@@ -343,6 +377,9 @@ int main() {
 
     // Start time measure
     float lastFrameTime = glfwGetTime(); // seconds
+
+    glfwSetKeyCallback(window, keyCallback);
+
     while (!glfwWindowShouldClose(window)) {
         float currentFrameTime = glfwGetTime();
         float deltaTime = currentFrameTime - lastFrameTime;
@@ -352,28 +389,30 @@ int main() {
         // using the value previously set with glClearColor().
         
         // Input polling
+        if(!isPaused){
+            float speed = 1.0f;
+            if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
+                speed = 2.0f;
+            }
+            if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS){
+                // left key pressed
+                xOffset = xOffset - speed * deltaTime;
+            }
+            if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS){
+                // right key pressed
+                xOffset = xOffset + speed * deltaTime;
+            }
 
-        float speed = 1.0f;
-        if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
-            speed = 2.0f;
+            if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS){
+                // up key pressed
+                yOffset = yOffset + speed * deltaTime;
+            }
+            if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS){
+                // down key pressed
+                yOffset = yOffset - speed * deltaTime;
+            }
         }
-        if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS){
-            // left key pressed
-            xOffset = xOffset - speed * deltaTime;
-        }
-        if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS){
-            // right key pressed
-            xOffset = xOffset + speed * deltaTime;
-        }
-
-        if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS){
-            // up key pressed
-            yOffset = yOffset + speed * deltaTime;
-        }
-        if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS){
-            // down key pressed
-            yOffset = yOffset - speed * deltaTime;
-        }
+        
 
         glUseProgram(shaderProgram);
 
