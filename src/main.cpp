@@ -416,9 +416,21 @@ int main() {
             }
         }
         
+        // Using GLM, we just send the transformation matrix to the GPU. The shader code
+        // already applies the model transformation matrix (which, when run in the shader
+        // code, will contain all the transformations we wish to apply when constructed
+        // and composed correctly), so it just needs to be sent after composed.
+        glm::mat4 model = glm::mat4(1.0f); // identity matrix
+        model = glm::translate(model, glm::vec3(xOffset, yOffset, 0.0f)); // move by offset
 
         glUseProgram(shaderProgram);
 
+        // Find 'model' memory location
+        GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
+
+        // Send composed model matrix (using value_ptr) to location found
+        // in the previous step
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
         // int offsetLoc = glGetUniformLocation(shaderProgram, "xOffset");
         // Asks OpenGL:
         // “In the currently linked shader program, where is the uniform variable named xOffset?”
@@ -427,8 +439,8 @@ int main() {
         // Find the memory location for the variable xOffset
         // Return an integer handle that refers to that location
         // OpengGL doesn't expose actual variable pointers in GLSL - uses opaque location IDs
-        glUniform1f(glGetUniformLocation(shaderProgram, "xOffset"), xOffset);
-        glUniform1f(glGetUniformLocation(shaderProgram, "yOffset"), yOffset);
+        // glUniform1f(glGetUniformLocation(shaderProgram, "xOffset"), xOffset);
+        // glUniform1f(glGetUniformLocation(shaderProgram, "yOffset"), yOffset);
 
         // Sends the value of xOffset(C++) to the GPU at the location where xOffset is found
         // in the GLSL shader program. 
