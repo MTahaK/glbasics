@@ -299,33 +299,8 @@ int main() {
     unsigned int VBO;                       // vertex buffer object
     glGenBuffers(1, &VBO);                  // Generate 1 buffer
     glBindBuffer(GL_ARRAY_BUFFER, VBO);     // Bind it as a vertex buffer
-    // Binding a VBO to GL_ARRAY_BUFFER sets it as the source of vertex data for upcoming attribute configuration calls, like glVertexAttribPointer.
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); // This does the actual upload of vertex data to the GPU.
-    // GL_STATIC_DRAW -> “This data will be set once and drawn many times”
-    // "I'm not going to update this often—just use it for drawing"
-
-    // | Function       | Purpose                                      |
-    // | -------------- | -------------------------------------------- |
-    // | `glGenBuffers` | Ask OpenGL to allocate a buffer              |
-    // | `glBindBuffer` | Make it the *current* buffer for vertex data |
-    // | `glBufferData` | Copy your CPU-side array into the GPU buffer |
-
-    // | Usage Hint        | Meaning                                                        |
-    // | ----------------- | -------------------------------------------------------------- |
-    // | `GL_STATIC_DRAW`  | Data will not change often; used for static models, UI, etc.   |
-    // | `GL_DYNAMIC_DRAW` | Data will change often; used for frequently updated animations |
-    // | `GL_STREAM_DRAW`  | Data will change every frame; used for real-time streams       |
-
-    // What happens internally:
-    // Your float[] array in RAM:
-    // [-0.5, -0.5, 0.5, -0.5, 0.0, 0.5]
-
-    // ↓ glBufferData
-
-    // GPU Memory (VRAM):
-    //     [same data now lives here]
-
-    // For glDrawElements:
+    
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); // This 
     unsigned int EBO;
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
@@ -340,33 +315,8 @@ int main() {
         (void*)0            // offset into data
     );
 
-    // One can think of the VAO as a lookup table of mappings for the data in the VBO.
-
-    // glVertexAttribPointer(
-    //     index,          // attribute location in the vertex shader
-    //     size,           // number of components (e.g., 2 for vec2, 3 for vec3)
-    //     type,           // usually GL_FLOAT
-    //     normalized,     // whether to normalize (typically false for floats)
-    //     stride,         // total byte size of one vertex
-    //     pointer         // byte offset to this attribute within each vertex
-    // );
-    // “Attribute index in the vertex shader should read from the currently bound VBO
-    //  using this layout. Also, store this association in the currently bound VAO.”
     glEnableVertexAttribArray(0);
 
-    // Effectively, each call of glVertexAttribPointer sets up the mapping for a single
-    // attribute in the VBO. The index given corresponds to the 'attribute index' that
-    // is then activated by glEnableVertexAttribArray(index). The index has nothing
-    // to do with the byte offset in the VBO. The index is the location in the vertex
-    // shader.
-    
-    // GLSL example:
-    // layout (location = 0) in vec3 aPosition;
-    // layout (location = 1) in vec3 aColor;
-    // layout (location = 2) in vec2 aTexCoord;
-    
-    // After this point, the VAO, which is 'recording state', understands that:
-    // Attribute 0 uses VBO X, reads 2 floats...
     
     // Load shader sources
     std::string vertexSrc = loadShaderSource("shaders/vertex.glsl");
@@ -484,34 +434,7 @@ int main() {
         // * THIS IS THE BASIC METHOD TO UPDATE VALUES USED IN SHADER CODE!
 
         glBindVertexArray(VAO);           // ✅ Reactivate the same VAO for drawing
-        // Render Loop Setup Notes
-        // ------------------------
-        // Why glBindVertexArray() is called again:
-        // - The first glBindVertexArray(...) earlier in the code was for *configuration*.
-        //   → It told OpenGL how to interpret the vertex data (via glVertexAttribPointer).
-        //
-        // - This glBindVertexArray(...) is for *use* during drawing.
-        //   → It reactivates the VAO so the GPU knows where to fetch vertex data from,
-        //     and how to match it to shader inputs.
-        //
-        // OpenGL does not retain the VAO binding between frames or state changes,
-        // so you must bind the VAO (and shader program) again before issuing draw calls.
-
-        // glDrawArrays(GL_TRIANGLES, 0, 3);
         
-        // void glDrawArrays(GLenum mode, GLint first, GLsizei count);
-        // -----------------
-        // mode:   GL_TRIANGLES = interpret every group of 3 vertices as a triangle
-        // first:  Index of the first vertex in the VBO to use (usually 0)
-        // count:  Total number of vertices to process (e.g., 3 for one triangle)
-        //
-        // Other common modes include:
-        //   GL_POINTS           → render vertices as dots
-        //   GL_LINES            → pairs of vertices form lines
-        //   GL_LINE_STRIP       → connected line segments
-        //   GL_TRIANGLE_STRIP   → shared-vertex triangle chain
-        //   GL_TRIANGLE_FAN     → radial triangles sharing the first vertex
-
         glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
         // | Argument          | Meaning                                         |
         // | ----------------- | ----------------------------------------------- |
@@ -523,50 +446,11 @@ int main() {
         // ! NOTE: glDrawElements would be better suited for my game.
         // ! glDrawElements allows you to draw objects that share vertices w/o
         // ! having to duplicate the shared vertices.
-        
-        // glDrawArrays
-        // float vertices[] = {
-        //     triangle 1
-        //     -0.5f, -0.5f,  // bottom left
-        //      0.5f, -0.5f,  // bottom right
-        //      0.5f,  0.5f,  // top right
-        
-        //      triangle 2
-        //      0.5f,  0.5f,  // top right (again)
-        //     -0.5f,  0.5f,  // top left
-        //     -0.5f, -0.5f   // bottom left (again)
-        // };
-
-        // glDrawElements
-        // float vertices[] = {
-        //     -0.5f, -0.5f,  // 0: bottom left
-        //      0.5f, -0.5f,  // 1: bottom right
-        //      0.5f,  0.5f,  // 2: top right
-        //     -0.5f,  0.5f   // 3: top left
-        // };
-        // unsigned int indices[] = {
-        //     0, 1, 2,  // first triangle
-        //     2, 3, 0   // second triangle
-        // };
-
-        // for glDrawElements, add during setup after binding VAO:
-        // unsigned int EBO;
-        // glGenBuffers(1, &EBO);
-        // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
         glfwSwapBuffers(window);          // Present the frame (double buffering)
         glfwPollEvents();                 // Handle keyboard/mouse/input/window events
     }
 
-    // GL_COLOR_BUFFER_BIT is not a color.
-    // It is an instruction:
-    // “Clear the color buffer”—i.e., erase the contents of the current framebuffer's pixel colors.
-    // It tells glClear(...) what to erase. You can also clear:
-    // GL_DEPTH_BUFFER_BIT → clears depth values
-    // GL_STENCIL_BUFFER_BIT → clears stencil mask - not relevant now
-    // You combine them using | when needed.
-    
     glDeleteBuffers(1, &VBO);
     glDeleteVertexArrays(1, &VAO);
     glDeleteProgram(shaderProgram);
