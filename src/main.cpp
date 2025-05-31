@@ -226,7 +226,7 @@ int main() {
     // Create an 800x600 window with title "GL Triangle Window"
     // last two args are for context sharing between windows - not needed here
     // Function call also creates an OpenGL context associated with the window.
-    GLFWwindow* window = glfwCreateWindow(1920, 1080, "GL Triangle Window", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1000, 1000, "GL Triangle Window", nullptr, nullptr);
 
     if(!window){
         std::cerr << "Failed to create GLFW window\n";
@@ -278,14 +278,16 @@ int main() {
         // 0.5f, 0.5f,   // bottom right
         // 0.0f, 0.5f    // top center
 
-        -0.25f, -0.25f, 
-        0.0f, 0.25f,   
+        -0.25, -0.25,
+        -0.25, 0.25,
+        0.25f, 0.25f,   
         0.25f, -0.25f    
     };
 
     // For use with glDrawElements (more useful for my game):
     unsigned int indices[] = {
-        0, 1, 2  // draw triangle using vertex 0 → 1 → 2
+        0, 1, 2,  // draw triangle using vertex 0 → 1 → 2
+        2, 3, 0
     };
 
     float xOffset= 0.0f, yOffset = 0.0f;
@@ -435,7 +437,7 @@ int main() {
 
         glBindVertexArray(VAO);           // ✅ Reactivate the same VAO for drawing
         
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         // | Argument          | Meaning                                         |
         // | ----------------- | ----------------------------------------------- |
         // | `GL_TRIANGLES`    | Draws one triangle per 3 indices                |
