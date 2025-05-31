@@ -9,6 +9,7 @@
 #include <string>
 
 bool isPaused = false;
+bool scaleUp = false;
 
 // Key Callback Function (GLFW Required Signature)
 // ----------------------------------------------
@@ -33,6 +34,9 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS){
         isPaused = !isPaused;
         std::cout << (isPaused ? "Game Paused\n" : "Game Unpaused\n");
+    } else if(key == GLFW_KEY_S && action == GLFW_PRESS){
+        scaleUp = !scaleUp;
+        // std::cout << "Triggering scale transformation\n";
     }
 }
 
@@ -422,6 +426,11 @@ int main() {
         // and composed correctly), so it just needs to be sent after composed.
         glm::mat4 model = glm::mat4(1.0f); // identity matrix
         model = glm::translate(model, glm::vec3(xOffset, yOffset, 0.0f)); // move by offset
+        float angle = glfwGetTime(); // in seconds (radians)
+        model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f));
+        if(scaleUp){
+            model = glm::scale(model, glm::vec3(1.5f, 1.5f, 1.0f));
+        }
 
         glUseProgram(shaderProgram);
 
@@ -431,6 +440,34 @@ int main() {
         // Send composed model matrix (using value_ptr) to location found
         // in the previous step
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+        // glm::value_ptr(...)
+        // --------------------
+        // Converts a GLM matrix (or vector) into a raw pointer (float*) usable by OpenGL.
+        //
+        // Usage:
+        // glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(matrix));
+        //
+        // Why it's needed:
+        // OpenGL expects matrices as arrays of floats in column-major order.
+        // GLM stores data this way internally, so value_ptr() gives you safe access to it.
+        
+        // glUniformMatrix4fv(...)
+        // ------------------------
+        // Sends a 4×4 matrix to the currently active shader program.
+        //
+        // Usage:
+        // glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
+        //
+        // Parameters:
+        // - location: ID of the uniform variable in the shader
+        // - 1: number of matrices you're uploading (usually 1)
+        // - GL_FALSE: whether to transpose (must be GL_FALSE for GLM)
+        // - value_ptr(matrix): raw float pointer to the matrix data
+        //
+        // This sets a uniform mat4 variable in your GLSL vertex shader.
+
+
         // int offsetLoc = glGetUniformLocation(shaderProgram, "xOffset");
         // Asks OpenGL:
         // “In the currently linked shader program, where is the uniform variable named xOffset?”
