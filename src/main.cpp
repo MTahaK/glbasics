@@ -273,15 +273,12 @@ int main() {
     // Set up triangle, shader objects, and load and link shaders
 
     float vertices[] = {
-        // x, y coords
-        // -0.5f, -0.5f, // bottom left
-        // 0.5f, 0.5f,   // bottom right
-        // 0.0f, 0.5f    // top center
 
-        -0.25, -0.25,
-        -0.25, 0.25,
-        0.25f, 0.25f,   
-        0.25f, -0.25f    
+        -0.25f, -0.25f,  // bottom-left corner (0)
+        0.25f, -0.25f,  // bottom-right corner (1)
+        0.25f,  0.25f,  // top-right corner (2)
+        -0.25f,  0.25f   // top-left corner (3)
+
     };
 
     // For use with glDrawElements (more useful for my game):
@@ -378,7 +375,8 @@ int main() {
         // and composed correctly), so it just needs to be sent after composed.
         glm::mat4 model = glm::mat4(1.0f); // identity matrix
         model = glm::translate(model, glm::vec3(xOffset, yOffset, 0.0f)); // move by offset
-        float angle = glfwGetTime(); // in seconds (radians)
+        // float angle = glfwGetTime(); // in seconds (radians)
+        float angle = xOffset;
         model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f));
         if(scaleUp){
             model = glm::scale(model, glm::vec3(1.5f, 1.5f, 1.0f));
