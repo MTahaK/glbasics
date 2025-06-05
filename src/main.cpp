@@ -36,7 +36,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS){
         isPaused = !isPaused;
         std::cout << (isPaused ? "Game Paused\n" : "Game Unpaused\n");
-    } else if(key == GLFW_KEY_S && action == GLFW_PRESS){
+    } else if(key == GLFW_KEY_R && action == GLFW_PRESS){
         scaleUp = !scaleUp;
         // std::cout << "Triggering scale transformation\n";
     } else if (key == GLFW_KEY_P && action == GLFW_PRESS) {
@@ -280,10 +280,10 @@ int main() {
 
     float vertices[] = {
 
-        -0.25f, -0.25f,  // bottom-left corner (0)
-        0.25f, -0.25f,  // bottom-right corner (1)
-        0.25f,  0.25f,  // top-right corner (2)
-        -0.25f,  0.25f   // top-left corner (3)
+        -0.25f, -0.25f, 0.0f,  // bottom-left corner (0)
+        0.25f, -0.25f, 0.0f,  // bottom-right corner (1)
+        0.25f,  0.25f, 0.0f,  // top-right corner (2)
+        -0.25f,  0.25f, 0.0f   // top-left corner (3)
 
     };
 
@@ -293,7 +293,12 @@ int main() {
         2, 3, 0
     };
 
-    float xOffset= 0.0f, yOffset = 0.0f;
+    float xOffset= 0.0f, yOffset = 0.0f, zOffset = 0.0f;
+    glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 2.0f); // z=2 means looking "toward" the origin
+    glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f); // look at center
+    glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);     // y axis is up
+
+
     
     // Create VAO (vertex array object)
     // Create and bind VAO BEFORE VBO bind, binding VAO "starts recording state"
@@ -313,10 +318,10 @@ int main() {
 
     glVertexAttribPointer(
         0,                  // attribute location (in vertex shader)
-        2,                  // number of components (x, y)
+        3,                  // number of components (x, y)
         GL_FLOAT,           // data type
         GL_FALSE,           // normalize?
-        2 * sizeof(float),  // stride (bytes between vertices)
+        3 * sizeof(float),  // stride (bytes between vertices)
         (void*)0            // offset into data
     );
 
@@ -373,6 +378,32 @@ int main() {
                 // down key pressed
                 yOffset = yOffset - speed * deltaTime;
             }
+            
+            if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS){
+                // q pressed
+                zOffset = zOffset + speed*deltaTime;
+            }
+            if(glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS){
+                // q pressed
+                zOffset = zOffset - speed*deltaTime;
+            }
+
+            // Camera control
+            float camSpeed = 1.0f * deltaTime;
+
+            if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+                cameraPos.x -= camSpeed;
+            if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+                cameraPos.x += camSpeed;
+            if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+                cameraPos.y += camSpeed;
+            if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+                cameraPos.y -= camSpeed;
+            if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+                cameraPos.z += camSpeed;
+            if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+                cameraPos.z -= camSpeed;
+
         }
         
         // Using GLM, we just send the transformation matrix to the GPU. The shader code
@@ -380,7 +411,7 @@ int main() {
         // code, will contain all the transformations we wish to apply when constructed
         // and composed correctly), so it just needs to be sent after composed.
         glm::mat4 model = glm::mat4(1.0f); // identity matrix
-        model = glm::translate(model, glm::vec3(xOffset, yOffset, 0.0f)); // move by offset
+        model = glm::translate(model, glm::vec3(xOffset, yOffset, zOffset)); // move by offset
         float angle = xOffset;
         model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f));
         if(scaleUp){
@@ -402,11 +433,9 @@ int main() {
         if (useOrtho) {
             view = glm::mat4(1.0f); // Identity for orthographic
         } else {
-            view = glm::lookAt(
-                glm::vec3(0.0f, 0.0f, 3.0f),  // camera position
-                glm::vec3(0.0f, 0.0f, 0.0f),  // look at origin
-                glm::vec3(0.0f, 1.0f, 0.0f)   // up direction
-            );
+
+            view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
+
         }
 
         glm::mat4 MVP = projection * view * model;
