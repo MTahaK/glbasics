@@ -10,6 +10,8 @@
 
 bool isPaused = false;
 bool scaleUp = false;
+bool useOrtho = true; // Start in orthographic mode
+
 
 // Key Callback Function (GLFW Required Signature)
 // ----------------------------------------------
@@ -37,7 +39,11 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     } else if(key == GLFW_KEY_S && action == GLFW_PRESS){
         scaleUp = !scaleUp;
         // std::cout << "Triggering scale transformation\n";
-    }
+    } else if (key == GLFW_KEY_P && action == GLFW_PRESS) {
+        useOrtho = !useOrtho;
+        std::cout << "Projection mode: " << (useOrtho ? "Orthographic" : "Perspective") << "\n";
+}
+
 }
 
 // If I wanted to handle multiple different inputs via a callback event, I would
@@ -375,21 +381,48 @@ int main() {
         // and composed correctly), so it just needs to be sent after composed.
         glm::mat4 model = glm::mat4(1.0f); // identity matrix
         model = glm::translate(model, glm::vec3(xOffset, yOffset, 0.0f)); // move by offset
-        // float angle = glfwGetTime(); // in seconds (radians)
         float angle = xOffset;
         model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f));
         if(scaleUp){
             model = glm::scale(model, glm::vec3(1.5f, 1.5f, 1.0f));
         }
 
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        float aspect = static_cast<float>(width) / height;
+
+        glm::mat4 projection;
+        if (useOrtho) {
+            projection = glm::ortho(-aspect, aspect, -1.0f, 1.0f);
+        } else {
+            projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
+        }
+
+        glm::mat4 view;
+        if (useOrtho) {
+            view = glm::mat4(1.0f); // Identity for orthographic
+        } else {
+            view = glm::lookAt(
+                glm::vec3(0.0f, 0.0f, 3.0f),  // camera position
+                glm::vec3(0.0f, 0.0f, 0.0f),  // look at origin
+                glm::vec3(0.0f, 1.0f, 0.0f)   // up direction
+            );
+        }
+
+        glm::mat4 MVP = projection * view * model;
+
         glUseProgram(shaderProgram);
 
-        // Find 'model' memory location
-        GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
+        // // Find 'model' memory location
+        // GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
 
-        // Send composed model matrix (using value_ptr) to location found
-        // in the previous step
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        // // Send composed model matrix (using value_ptr) to location found
+        // // in the previous step
+        // glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+        GLuint mvpLoc = glGetUniformLocation(shaderProgram, "MVP");
+        glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(MVP));
+
 
         // glm::value_ptr(...)
         // --------------------
