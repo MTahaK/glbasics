@@ -36,7 +36,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS){
         isPaused = !isPaused;
         std::cout << (isPaused ? "Game Paused\n" : "Game Unpaused\n");
-    } else if(key == GLFW_KEY_S && action == GLFW_PRESS){
+    } else if(key == GLFW_KEY_R && action == GLFW_PRESS){
         scaleUp = !scaleUp;
         // std::cout << "Triggering scale transformation\n";
     } else if (key == GLFW_KEY_P && action == GLFW_PRESS) {
@@ -294,6 +294,8 @@ int main() {
     };
 
     float xOffset= 0.0f, yOffset = 0.0f;
+    glm::vec2 cameraPos = glm::vec2(0.0f, 0.0f);
+
     
     // Create VAO (vertex array object)
     // Create and bind VAO BEFORE VBO bind, binding VAO "starts recording state"
@@ -373,6 +375,20 @@ int main() {
                 // down key pressed
                 yOffset = yOffset - speed * deltaTime;
             }
+
+            // Camera movement
+            if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+                cameraPos.x -= speed * deltaTime;
+            }
+            if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+                cameraPos.x += speed * deltaTime;
+            }
+            if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+                cameraPos.y += speed * deltaTime;
+            }
+            if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+                cameraPos.y -= speed * deltaTime;
+            }
         }
         
         // Using GLM, we just send the transformation matrix to the GPU. The shader code
@@ -400,7 +416,8 @@ int main() {
 
         glm::mat4 view;
         if (useOrtho) {
-            view = glm::mat4(1.0f); // Identity for orthographic
+            // translate(identity, -cameraPos.x, -cameraPos.y, z=0.0f)
+            view = glm::translate(glm::mat4(1.0f), glm::vec3(-cameraPos, 0.0f));
         } else {
             view = glm::lookAt(
                 glm::vec3(0.0f, 0.0f, 3.0f),  // camera position
@@ -413,11 +430,11 @@ int main() {
 
         glUseProgram(shaderProgram);
 
-        // // Find 'model' memory location
+        // Find 'model' memory location
         // GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
 
-        // // Send composed model matrix (using value_ptr) to location found
-        // // in the previous step
+        // Send composed model matrix (using value_ptr) to location found
+        // in the previous step
         // glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
         GLuint mvpLoc = glGetUniformLocation(shaderProgram, "MVP");

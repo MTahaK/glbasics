@@ -163,3 +163,109 @@ Always remember:
 
 > **Right-multiplication in GLM means transformations are applied in reverse order from how they're written.**
 
+---
+## Framebuffer Size and DPI Scaling
+
+### What Is the Framebuffer?
+
+The **framebuffer** is a memory region where OpenGL renders each frame. It holds data such as:
+
+- Color buffer
+- Depth buffer
+- Stencil buffer
+
+When you create a window with GLFW, it automatically sets up a **default framebuffer** for you:
+
+```cpp
+glfwCreateWindow(1000, 1000, "Title", nullptr, nullptr);
+```
+
+You don’t manually create this framebuffer—it’s handled by GLFW, the OS, and the GPU driver.
+
+---
+
+### How Is the Framebuffer Size Determined?
+
+The actual size of the framebuffer is determined by:
+
+1. **Window size** — as specified in your `glfwCreateWindow(...)` call.
+2. **Pixel density (DPI scaling)** — determined by your OS and GPU.
+
+If the window is 800×600 and the DPI scaling is 2.0 (e.g. Retina display), the framebuffer will be **1600×1200**.
+
+So:
+
+```cpp
+// May give different values!
+glfwGetWindowSize(...);
+glfwGetFramebufferSize(...);
+```
+
+Use `glfwGetFramebufferSize(...)` when computing aspect ratios for projection matrices.
+
+---
+
+### How Can Framebuffer Size Change?
+
+- User resizes the window
+- Window is dragged between monitors (with different DPI)
+- DPI scaling setting is changed
+- Fullscreen is toggled
+- OS enforces zoom or scaling
+
+You can respond to changes either by:
+
+- **Polling** `glfwGetFramebufferSize` every frame (which you are doing), or
+- **Reacting** via a registered callback:
+
+```cpp
+glfwSetFramebufferSizeCallback(window, [](GLFWwindow*, int width, int height) {
+    glViewport(0, 0, width, height);
+});
+```
+
+This callback resizes the OpenGL viewport to match the new framebuffer size.
+
+---
+
+### Do You Need the Callback?
+
+**No**, not if you’re already calling:
+
+```cpp
+int width, height;
+glfwGetFramebufferSize(window, &width, &height);
+```
+
+...**every frame** inside your game/render loop. This gives you the current dimensions on demand.
+
+The callback is only helpful if you:
+
+- Want to avoid redundant recalculations
+- Only care about size changes (not polling every frame)
+- Are managing off-screen framebuffers or complex layouts
+
+---
+
+### Why It Matters
+
+Framebuffer size affects:
+
+- **Aspect ratio** of your scene
+- **Projection matrix** calculation
+- **Screen-space accuracy**
+
+Without querying the true framebuffer size, your scene might stretch or squish due to incorrect aspect ratio handling.
+
+---
+
+### Summary Table
+
+| Aspect                   | Details                                                   |
+| ------------------------ | --------------------------------------------------------- |
+| Who creates framebuffer? | GLFW + OS + GPU                                           |
+| Size depends on?         | Window size × DPI scaling                                 |
+| Can it change?           | Yes — resizing, DPI change, fullscreen toggle, etc.       |
+| Update strategy?         | Use callback or poll `glfwGetFramebufferSize`             |
+| Your setup               | ✅ Polling every frame — callback not needed              |
+| Why it matters           | Ensures correct rendering resolution and projection setup |
