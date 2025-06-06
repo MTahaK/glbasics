@@ -162,7 +162,55 @@ This behavior is consistent and predictable:
 Always remember:
 
 > **Right-multiplication in GLM means transformations are applied in reverse order from how they're written.**
+---
+## Camera Zoom in 2D Orthographic View
 
+Zooming in a 2D orthographic projection is a natural extension of camera control and is especially useful in games like Terraria or when building a level editor.
+
+### Concept
+
+In orthographic projection, the visible area is defined by a box:
+
+```cpp
+glm::ortho(left, right, bottom, top);
+```
+
+To zoom, you simply adjust the size of this box. Enlarging the bounds zooms **out**, reducing them zooms **in**.
+
+This avoids any distortion since orthographic projections preserve sizes and angles regardless of depth.
+
+---
+
+### Implementation Outline
+
+#### Zoom Factor
+
+```cpp
+float zoom = 1.0f; // Default zoom level
+```
+
+#### Adjust Projection Matrix
+
+```cpp
+float aspect = static_cast<float>(width) / height;
+float viewHeight = 1.0f * zoom;
+float viewWidth = aspect * viewHeight;
+
+projection = glm::ortho(-viewWidth, viewWidth, -viewHeight, viewHeight);
+```
+
+#### Input Control Example (Optional)
+
+```cpp
+if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+    zoom -= 0.5f * deltaTime;
+    if (zoom < 0.1f) zoom = 0.1f;
+}
+if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+    zoom += 0.5f * deltaTime;
+    if (zoom > 10.0f) zoom = 10.0f;
+}
+```
 ---
 ## Framebuffer Size and DPI Scaling
 
@@ -269,3 +317,156 @@ Without querying the true framebuffer size, your scene might stretch or squish d
 | Update strategy?         | Use callback or poll `glfwGetFramebufferSize`             |
 | Your setup               | ✅ Polling every frame — callback not needed              |
 | Why it matters           | Ensures correct rendering resolution and projection setup |
+
+---
+
+<!-- # Mouse Input
+
+### 1. 🔍 What Happens When You Move the Mouse?
+
+When you move the mouse in a window:
+
+- Your operating system knows where your cursor is in screen coordinates (typically top-left is (0,0)).
+- GLFW tracks this and provides coordinates via glfwGetCursorPos(...).
+
+However:
+
+- These coordinates are in screen space, not OpenGL space.
+- OpenGL expects inputs in Normalized Device Coordinates (NDC) for rendering (from [-1,1] in X and Y).
+- So we must convert mouse position across multiple spaces.
+
+
+| Space Name   | Range                       | Description                                           |
+| ------------ | --------------------------- | ----------------------------------------------------- |
+| Screen Space | `(0,0)` to `(width,height)` | Top-left origin. What `glfwGetCursorPos()` gives you. |
+| NDC          | `[-1, 1]` in X and Y        | Post-projection space. OpenGL clips here.             |
+| Clip Space   | `[-w, w]` before division   | Coordinates before perspective division.              |
+| World Space  | Your own game’s coordinates | What your entities and logic use.                     |
+
+We’ll go:
+Mouse (screen space) → NDC → Clip Space → (via inverse MVP) → World Space
+
+### 🛠️ Practical Implementation
+
+#### Step 1: Get Mouse Position in Screen Coordinates
+
+```cpp
+double mouseX, mouseY;
+glfwGetCursorPos(window, &mouseX, &mouseY);
+```
+
+- This gives mouseX, mouseY relative to top-left of window.
+- But OpenGL expects coordinates with origin at center, and Y increasing up, not down.
+
+#### Step 2: Convert to Normalized Device Coordinates (NDC)
+
+
+```cpp
+int width, height;
+glfwGetFramebufferSize(window, &width, &height);
+
+// Convert screen -> NDC
+float xNDC = (2.0f * mouseX) / width - 1.0f;
+float yNDC = 1.0f - (2.0f * mouseY) / height;
+```
+✅ Why this formula?
+
+- Mouse X goes from [0, width] → map to [-1, 1].
+- Mouse Y goes from [0, height] (top to bottom), but OpenGL Y goes bottom-to-top, so we subtract from 1.
+
+ -->
+# 🧠 Coordinate Conversion: From Screen Space to World Space
+
+When you move the mouse, GLFW gives you coordinates like `(400, 300)` — **but these are not meaningful to OpenGL directly.** You need to go through multiple steps:
+
+```
+Screen Space → Normalized Device Coordinates (NDC)
+NDC → Clip Space
+Clip Space → World Space (via inverse MVP)
+```
+
+---
+
+## 1️⃣ Screen Space to NDC
+
+### 🔷 What is screen space?
+
+GLFW returns mouse coordinates in **screen space**, relative to the top-left corner of the window:
+
+- `(0, 0)` is top-left
+- `(width, height)` is bottom-right
+
+### 🔷 What does OpenGL want?
+
+OpenGL uses **Normalized Device Coordinates (NDC)**, where:
+
+- Center is `(0, 0)`
+- Coordinates go from `-1` to `+1`
+- Y is **flipped** compared to screen space
+
+| Screen | →    | NDC  |
+| ------ | ---- | ---- |
+| 0      |      | -1   |
+| width  |      | +1   |
+| 0      |      | +1   |
+| height |      | -1   |
+
+### 🔢 Deriving the Formula
+
+```cpp
+xNDC = 2 * (x / width) - 1;
+yNDC = 1 - 2 * (y / height);
+```
+
+This rescales `[0, width]` to `[-1, 1]` and flips the Y axis.
+
+✅ **Why?** OpenGL uses centered NDC for rendering; we must match that format.
+
+---
+
+## 2️⃣ NDC to Clip Space
+
+In OpenGL, clip space and NDC are the same after **perspective division**. We reconstruct the clip space coordinate:
+
+```cpp
+glm::vec4 clipPos = glm::vec4(xNDC, yNDC, 0.0, 1.0);
+```
+
+✅ **Why?** This gives us the format needed to reverse-transform using the MVP matrix.
+
+---
+
+## 3️⃣ Clip Space to World Space
+
+Apply the inverse MVP transformation:
+
+```cpp
+glm::mat4 inverse = glm::inverse(MVP);
+glm::vec4 worldPos = inverse * clipPos;
+```
+
+✅ **Why?** This reverses the full transform:  
+`world → view → projection → clip`  
+becomes  
+`clip → inverse(projection * view * model) → world`
+
+---
+
+## 4️⃣ Divide by w (Perspective Division)
+
+```cpp
+glm::vec2 finalWorldPos = glm::vec2(worldPos) / worldPos.w;
+```
+
+✅ **Why?** To return from **homogeneous** to **Euclidean** space — this is required in all perspective transformations.
+
+---
+
+## 🔚 Summary
+
+| Step         | Operation                    | Reason                     |
+| ------------ | ---------------------------- | -------------------------- |
+| Screen → NDC | Rescale to `[-1, 1]`, flip Y | Match OpenGL format        |
+| NDC → Clip   | Embed into vec4              | Needed for MVP inversion   |
+| Clip → World | Multiply by `inverse(MVP)`   | Undo projection/view/model |
+| Divide by w  | Homogeneous → Euclidean      | Restore proper coordinate  |
