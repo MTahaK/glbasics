@@ -12,6 +12,9 @@ bool isPaused = false;
 bool scaleUp = false;
 bool useOrtho = true; // Start in orthographic mode
 
+int width, height;
+glm::mat4 currentMVP;
+
 
 // Key Callback Function (GLFW Required Signature)
 // ----------------------------------------------
@@ -42,9 +45,39 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     } else if (key == GLFW_KEY_P && action == GLFW_PRESS) {
         useOrtho = !useOrtho;
         std::cout << "Projection mode: " << (useOrtho ? "Orthographic" : "Perspective") << "\n";
-}
+    }
 
 }
+
+// void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
+//     // std::cout << "Mouse Position: (" << xpos << ", " << ypos << ")\n";
+//     // float ndcX = (2.0f * xpos) / width - 1.0f;
+//     // float ndcY = 1.0f - (2.0f * ypos) / height; // invert Y
+//     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+//         double mouseX, mouseY;
+//         glfwGetCursorPos(window, &mouseX, &mouseY);
+
+//         int width, height;
+//         glfwGetFramebufferSize(window, &width, &height);
+
+//         // Step 1
+//         float xNDC = (2.0f * mouseX) / width - 1.0f;
+//         float yNDC = 1.0f - (2.0f * mouseY) / height;
+
+//         // Step 2
+//         glm::vec4 clipCoords = glm::vec4(xNDC, yNDC, -1.0f, 1.0f);
+
+//         // Step 3
+//         glm::mat4 MVP = projection * view * model;
+//         glm::mat4 invMVP = glm::inverse(MVP);
+//         glm::vec4 worldCoords = invMVP * clipCoords;
+
+//         // Step 4
+//         worldCoords /= worldCoords.w;
+
+//         std::cout << "Mouse world position: (" << worldCoords.x << ", " << worldCoords.y << ")\n";
+//     }
+// }
 
 // If I wanted to handle multiple different inputs via a callback event, I would
 // do so within the *single* keyCallback function. Only ONE callback function can
@@ -343,6 +376,7 @@ int main() {
     float lastFrameTime = glfwGetTime(); // seconds
 
     glfwSetKeyCallback(window, keyCallback);
+    // glfwSetCursorPosCallback(window, cursorPositionCallback);
 
     while (!glfwWindowShouldClose(window)) {
         float currentFrameTime = glfwGetTime();
@@ -390,20 +424,19 @@ int main() {
                 cameraPos.y -= speed * deltaTime;
             }
         }
-        
         // Using GLM, we just send the transformation matrix to the GPU. The shader code
         // already applies the model transformation matrix (which, when run in the shader
         // code, will contain all the transformations we wish to apply when constructed
         // and composed correctly), so it just needs to be sent after composed.
         glm::mat4 model = glm::mat4(1.0f); // identity matrix
         model = glm::translate(model, glm::vec3(xOffset, yOffset, 0.0f)); // move by offset
-        float angle = xOffset;
-        model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f));
+        // float angle = xOffset;
+        // model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f));
         if(scaleUp){
             model = glm::scale(model, glm::vec3(1.5f, 1.5f, 1.0f));
         }
 
-        int width, height;
+        
         glfwGetFramebufferSize(window, &width, &height);
         float aspect = static_cast<float>(width) / height;
 
@@ -427,6 +460,31 @@ int main() {
         }
 
         glm::mat4 MVP = projection * view * model;
+
+        currentMVP = MVP;
+
+        glfwSetMouseButtonCallback(window, [](GLFWwindow* window, int button, int action, int mods) {
+            if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+                double mouseX, mouseY;
+                glfwGetCursorPos(window, &mouseX, &mouseY);
+
+                int width, height;
+                glfwGetFramebufferSize(window, &width, &height);
+
+                // Convert to NDC
+                float xNDC = (2.0f * mouseX) / width - 1.0f;
+                float yNDC = 1.0f - (2.0f * mouseY) / height;
+
+                glm::vec4 clipCoords = glm::vec4(xNDC, yNDC, -1.0f, 1.0f);
+
+                glm::mat4 invMVP = glm::inverse(currentMVP); // use global copy
+                glm::vec4 worldCoords = invMVP * clipCoords;
+                worldCoords /= worldCoords.w;
+
+                std::cout << "Mouse world coordinates: (" << worldCoords.x << ", " << worldCoords.y << ")\n";
+            }
+        });
+
 
         glUseProgram(shaderProgram);
 
