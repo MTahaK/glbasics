@@ -377,12 +377,12 @@ int main() {
 
     glfwSetKeyCallback(window, keyCallback);
     // glfwSetCursorPosCallback(window, cursorPositionCallback);
+    glClear(GL_COLOR_BUFFER_BIT);     // Clear the screen to the background color
 
     while (!glfwWindowShouldClose(window)) {
         float currentFrameTime = glfwGetTime();
         float deltaTime = currentFrameTime - lastFrameTime;
         lastFrameTime = currentFrameTime;
-        glClear(GL_COLOR_BUFFER_BIT);     // Clear the screen to the background color
         // GL_COLOR_BUFFER_BIT is a bitmask constant that tells OpenGL to clear the color buffer
         // using the value previously set with glClearColor().
         
